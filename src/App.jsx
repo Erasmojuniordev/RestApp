@@ -3,23 +3,19 @@ import { AuthProvider } from './context/AuthContext'
 import { PrivateRoute } from './routes/PrivateRoute'
 import Layout from './components/layout/Layout'
 
-import Login from './pages/Login'
+import Login        from './pages/Login'
 import SemPermissao from './pages/SemPermissao'
-
-// Páginas ainda não criadas — placeholders por enquanto
-const Cardapio  = () => <div className="p-8 text-white">Cardápio — em breve</div>
-const Comanda   = () => <div className="p-8 text-white">Comanda — em breve</div>
-const Cozinha   = () => <div className="p-8 text-white">Cozinha — em breve</div>
-const Caixa     = () => <div className="p-8 text-white">Caixa — em breve</div>
+import Cardapio     from './pages/Cardapio'
+import Comanda      from './pages/Comanda'
+import Cozinha      from './pages/Cozinha'
+import Caixa        from './pages/Caixa'
 
 function AppRoutes() {
   return (
     <Routes>
-      {/* Rota pública */}
-      <Route path="/login" element={<Login />} />
+      <Route path="/login"         element={<Login />} />
       <Route path="/sem-permissao" element={<SemPermissao />} />
 
-      {/* Rotas protegidas — cada uma com Layout + role específica */}
       <Route path="/cardapio" element={
         <PrivateRoute roles={['Admin']}>
           <Layout><Cardapio /></Layout>
@@ -44,11 +40,8 @@ function AppRoutes() {
         </PrivateRoute>
       } />
 
-      {/* Rota raiz → login */}
-      <Route path="/" element={<Navigate to="/login" replace />} />
-
-      {/* Rota não encontrada → login */}
-      <Route path="*" element={<Navigate to="/login" replace />} />
+      <Route path="/"  element={<Navigate to="/login" replace />} />
+      <Route path="*"  element={<Navigate to="/login" replace />} />
     </Routes>
   )
 }
