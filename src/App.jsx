@@ -9,6 +9,7 @@ import Cardapio     from './pages/Cardapio'
 import Comanda      from './pages/Comanda'
 import Cozinha      from './pages/Cozinha'
 import Caixa        from './pages/Caixa'
+import Usuarios     from './pages/Usuarios'
 
 function AppRoutes() {
   return (
@@ -37,6 +38,12 @@ function AppRoutes() {
       <Route path="/caixa" element={
         <PrivateRoute roles={['Admin', 'Caixa']}>
           <Layout><Caixa /></Layout>
+        </PrivateRoute>
+      } />
+
+      <Route path="/usuarios" element={
+        <PrivateRoute roles={['Admin']}>
+          <Layout><Usuarios /></Layout>
         </PrivateRoute>
       } />
 

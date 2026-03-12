@@ -1,9 +1,15 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { ChefHat, ClipboardList, CreditCard, Utensils, LogOut, User } from 'lucide-react'
+import { ChefHat, ClipboardList, CreditCard, Utensils, LogOut, User, Users } from 'lucide-react'
 
 const NAV_POR_ROLE = {
-  Admin:   [{ label: 'Cardápio',       path: '/cardapio', icon: ChefHat }],
+  Admin: [
+    { label: 'Cardápio',  path: '/cardapio', icon: ChefHat },
+    { label: 'Comandas',  path: '/comanda',  icon: ClipboardList },
+    { label: 'Cozinha',   path: '/cozinha',  icon: ChefHat },
+    { label: 'Caixa',     path: '/caixa',    icon: CreditCard },
+    { label: 'Usuários',  path: '/usuarios', icon: Users },
+  ],
   Garcom:  [{ label: 'Comandas',       path: '/comanda',  icon: ClipboardList }],
   Cozinha: [{ label: 'Painel Cozinha', path: '/cozinha',  icon: ChefHat }],
   Caixa:   [{ label: 'Caixa',          path: '/caixa',    icon: CreditCard }],
@@ -19,11 +25,8 @@ export default function Layout({ children }) {
 
   return (
     <div className="min-h-screen bg-zinc-950 flex">
-
-      {/* ── Sidebar ── */}
       <aside className="w-60 bg-zinc-900 border-r border-zinc-800 flex flex-col shrink-0">
 
-        {/* Logo */}
         <div className="px-5 py-6 border-b border-zinc-800">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 bg-amber-500 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(245,158,11,0.25)] shrink-0">
@@ -36,7 +39,6 @@ export default function Layout({ children }) {
           </div>
         </div>
 
-        {/* Nav */}
         <nav className="flex-1 p-3 space-y-1">
           {navItems.map(item => {
             const Icon = item.icon
@@ -45,7 +47,7 @@ export default function Layout({ children }) {
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition-all
                    ${isActive
-                     ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20 shadow-[0_2px_10px_rgba(245,158,11,0.08)]'
+                     ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
                      : 'text-zinc-500 hover:text-white hover:bg-zinc-800 border border-transparent'}`
                 }>
                 <Icon size={16} />
@@ -55,7 +57,6 @@ export default function Layout({ children }) {
           })}
         </nav>
 
-        {/* Perfil */}
         <div className="p-3 border-t border-zinc-800 space-y-1">
           <div className="flex items-center gap-3 px-4 py-3 rounded-2xl">
             <div className="w-8 h-8 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center shrink-0">
@@ -73,11 +74,9 @@ export default function Layout({ children }) {
         </div>
       </aside>
 
-      {/* ── Conteúdo ── */}
       <main className="flex-1 overflow-auto min-w-0">
         {children}
       </main>
-
     </div>
   )
 }
