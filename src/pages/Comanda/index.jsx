@@ -7,20 +7,30 @@ import { comandaService } from '../../services/comandaService'
 import { itemService } from '../../services/itemService'
 
 const STATUS_ESTILO = {
-  Aberta:    { texto: 'Aberta',     cls: 'text-zinc-400 bg-zinc-800 border-zinc-700' },
-  Pendente:  { texto: 'Pendente',   cls: 'text-amber-400 bg-amber-500/10 border-amber-500/30' },
-  EmPreparo: { texto: 'Em Preparo', cls: 'text-orange-400 bg-orange-500/10 border-orange-500/30' },
-  Pronto:    { texto: 'Pronto',     cls: 'text-green-400 bg-green-500/10 border-green-500/30' },
-  Entregue:  { texto: 'Entregue',   cls: 'text-blue-400 bg-blue-500/10 border-blue-500/30' },
-  Paga:      { texto: 'Paga',       cls: 'text-zinc-600 bg-zinc-900 border-zinc-800' },
-  Cancelada: { texto: 'Cancelada',  cls: 'text-red-400 bg-red-500/10 border-red-500/30' },
+  Aberta:    { label: 'Aberta',             cor: 'text-zinc-400 border-zinc-700' },
+  Pendente:  { label: 'Aguardando cozinha', cor: 'text-yellow-400 border-yellow-500/30' },
+  EmPreparo: { label: 'Em preparo',         cor: 'text-blue-400 border-blue-500/30' },
+  Pronto:    { label: 'Pronto',             cor: 'text-green-400 border-green-500/30' },
+  Fechada:   { label: 'Fechada',            cor: 'text-orange-400 border-orange-500/30' },
+  Paga:      { label: 'Paga',               cor: 'text-zinc-600 border-zinc-800' },
+  Cancelada: { label: 'Cancelada',          cor: 'text-red-400 border-red-500/20' },
+}
+
+const STATUS_ACOES = {
+  Aberta:    { label: 'Fechar Conta',            status: 'Fechada', cor: 'text-orange-400 border-orange-500/30 hover:bg-orange-500/10' },
+  Pendente:  { label: 'Aguardando cozinha...',   status: null,      cor: 'text-zinc-500 border-zinc-700' },
+  EmPreparo: { label: 'Em preparo...',            status: null,      cor: 'text-blue-400 border-blue-500/30' },
+  Pronto:    { label: 'Confirmar Entrega',        status: 'Aberta',  cor: 'text-green-400 border-green-500/30 hover:bg-green-500/10' },
+  Fechada:   { label: 'Aguardando pagamento...', status: null,      cor: 'text-zinc-500 border-zinc-700' },
+  Paga:      { label: 'Paga',                    status: null,      cor: 'text-zinc-600 border-zinc-800' },
+  Cancelada: { label: 'Cancelada',               status: null,      cor: 'text-red-400/50 border-red-500/20' },
 }
 
 function Badge({ status }) {
   const e = STATUS_ESTILO[status] ?? STATUS_ESTILO.Aberta
   return (
-    <span className={`inline-flex items-center text-[11px] font-black tracking-wide border px-2.5 py-1 rounded-full ${e.cls}`}>
-      {e.texto}
+    <span className={`inline-flex items-center text-[11px] font-black tracking-wide border px-2.5 py-1 rounded-full ${e.cor}`}>
+      {e.label}
     </span>
   )
 }
@@ -49,9 +59,9 @@ function Modal({ titulo, onClose, children, largura = 'max-w-md' }) {
 
 /* ── Lista de Comandas ── */
 function ListaComandas({ onNova, onAbrir }) {
-  const [comandas, setComandas]       = useState([])
-  const [carregando, setCarregando]   = useState(true)
-  const [busca, setBusca]             = useState('')
+  const [comandas, setComandas]     = useState([])
+  const [carregando, setCarregando] = useState(true)
+  const [busca, setBusca]           = useState('')
 
   const carregar = useCallback(async () => {
     try {
@@ -61,7 +71,7 @@ function ListaComandas({ onNova, onAbrir }) {
         comandaService.listar('Pendente'),
         comandaService.listar('EmPreparo'),
         comandaService.listar('Pronto'),
-        comandaService.listar('Entregue'),
+        comandaService.listar('Fechada'),
       ])
       setComandas(listas.flat())
     } catch (err) { console.error(err) }
@@ -70,7 +80,9 @@ function ListaComandas({ onNova, onAbrir }) {
 
   useEffect(() => { carregar() }, [carregar])
 
-  const filtradas = busca ? comandas.filter(c => String(c.numeroDaMesa).includes(busca)) : comandas
+  const filtradas = busca
+    ? comandas.filter(c => String(c.numeroDaMesa).includes(busca))
+    : comandas
 
   const abertas = comandas.filter(c => c.status === 'Aberta').length
   const prontas = comandas.filter(c => c.status === 'Pronto').length
@@ -87,8 +99,14 @@ function ListaComandas({ onNova, onAbrir }) {
           </div>
           <div className="ml-[52px] flex items-center gap-3 text-xs">
             <span className="text-zinc-400 font-bold">{comandas.length} ativas</span>
-            {prontas > 0 && <span className="text-green-400 font-black bg-green-500/10 border border-green-500/20 px-2 py-0.5 rounded-full">{prontas} pronta{prontas !== 1 ? 's' : ''} para entrega</span>}
-            {abertas > 0 && <span className="text-zinc-500">{abertas} aguardando pedido</span>}
+            {prontas > 0 && (
+              <span className="text-green-400 font-black bg-green-500/10 border border-green-500/20 px-2 py-0.5 rounded-full">
+                {prontas} pronta{prontas !== 1 ? 's' : ''} para entrega
+              </span>
+            )}
+            {abertas > 0 && (
+              <span className="text-zinc-500">{abertas} aguardando pedido</span>
+            )}
           </div>
         </div>
         <button onClick={onNova}
@@ -106,7 +124,8 @@ function ListaComandas({ onNova, onAbrir }) {
       {carregando ? (
         <div className="space-y-2">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-[72px] bg-zinc-900 border border-zinc-800 rounded-2xl animate-pulse" style={{ animationDelay: `${i * 60}ms` }} />
+            <div key={i} className="h-[72px] bg-zinc-900 border border-zinc-800 rounded-2xl animate-pulse"
+              style={{ animationDelay: `${i * 60}ms` }} />
           ))}
         </div>
       ) : filtradas.length === 0 ? (
@@ -120,14 +139,18 @@ function ListaComandas({ onNova, onAbrir }) {
       ) : (
         <div className="space-y-2">
           {filtradas.map(comanda => {
-            const estilo = STATUS_ESTILO[comanda.status]
+            const estilo = STATUS_ESTILO[comanda.status] ?? STATUS_ESTILO.Aberta
             return (
               <button key={comanda.id} onClick={() => onAbrir(comanda.id)}
                 className={`w-full flex items-center justify-between px-4 py-4 bg-zinc-900 border-2 rounded-2xl transition-all cursor-pointer group text-left
-                  ${comanda.status === 'Pronto' ? 'border-green-500/30 hover:border-green-500/50 shadow-[0_0_20px_rgba(34,197,94,0.05)]' : 'border-zinc-800 hover:border-zinc-700 hover:shadow-[0_4px_20px_rgba(0,0,0,0.3)]'}`}>
+                  ${comanda.status === 'Pronto'
+                    ? 'border-green-500/30 hover:border-green-500/50 shadow-[0_0_20px_rgba(34,197,94,0.05)]'
+                    : 'border-zinc-800 hover:border-zinc-700 hover:shadow-[0_4px_20px_rgba(0,0,0,0.3)]'}`}>
                 <div className="flex items-center gap-4">
-                  <div className={`w-11 h-11 rounded-2xl border flex items-center justify-center transition-all font-black text-base
-                    ${comanda.status === 'Pronto' ? 'bg-green-500/10 border-green-500/30 text-green-400' : 'bg-zinc-800 border-zinc-700 text-white group-hover:border-zinc-600'}`}>
+                  <div className={`w-11 h-11 rounded-2xl border flex items-center justify-center font-black text-base transition-all
+                    ${comanda.status === 'Pronto'
+                      ? 'bg-green-500/10 border-green-500/30 text-green-400'
+                      : 'bg-zinc-800 border-zinc-700 text-white group-hover:border-zinc-600'}`}>
                     {comanda.numeroDaMesa}
                   </div>
                   <div>
@@ -177,24 +200,40 @@ function DetalheComanda({ comandaId, onVoltar }) {
 
   useEffect(() => { carregar() }, [carregar])
 
-  const itensFiltrados = busca ? itens.filter(i => i.nome.toLowerCase().includes(busca.toLowerCase())) : itens
+  const itensFiltrados = busca
+    ? itens.filter(i => i.nome.toLowerCase().includes(busca.toLowerCase()))
+    : itens
 
   const addCarrinho = (item) => setCarrinho(p => {
     const ex = p.find(c => c.id === item.id)
-    return ex ? p.map(c => c.id === item.id ? { ...c, qtd: c.qtd + 1 } : c) : [...p, { ...item, qtd: 1, obs: '' }]
+    return ex
+      ? p.map(c => c.id === item.id ? { ...c, qtd: c.qtd + 1 } : c)
+      : [...p, { ...item, qtd: 1, obs: '' }]
   })
 
   const subCarrinho = (itemId) => setCarrinho(p => {
     const ex = p.find(c => c.id === itemId)
-    return ex?.qtd === 1 ? p.filter(c => c.id !== itemId) : p.map(c => c.id === itemId ? { ...c, qtd: c.qtd - 1 } : c)
+    return ex?.qtd === 1
+      ? p.filter(c => c.id !== itemId)
+      : p.map(c => c.id === itemId ? { ...c, qtd: c.qtd - 1 } : c)
   })
 
   const confirmarPedido = async () => {
     try {
       setSalvando(true); setErro('')
-      for (const item of carrinho) await comandaService.adicionarItem(comandaId, item.id, item.qtd, item.obs || null)
+      for (const item of carrinho)
+        await comandaService.adicionarItem(comandaId, item.id, item.qtd, item.obs || null)
       setCarrinho([]); setModal(null); await carregar()
     } catch (err) { setErro(err.response?.data?.erro ?? 'Erro ao adicionar itens.') }
+    finally { setSalvando(false) }
+  }
+
+  const removerItem = async (itemComandaId) => {
+    try {
+      setSalvando(true); setErro('')
+      await comandaService.removerItem(comandaId, itemComandaId)
+      await carregar()
+    } catch (err) { setErro(err.response?.data?.erro ?? 'Erro ao remover item.') }
     finally { setSalvando(false) }
   }
 
@@ -202,19 +241,23 @@ function DetalheComanda({ comandaId, onVoltar }) {
     try {
       setSalvando(true); setErro('')
       await comandaService.atualizarStatus(comandaId, novoStatus)
-      if (novoStatus === 7) onVoltar()
+      if (novoStatus === 'Cancelada') onVoltar()
       else { await carregar(); setConfirmacao(null) }
     } catch (err) { setErro(err.response?.data?.erro ?? 'Erro ao atualizar status.') }
     finally { setSalvando(false) }
   }
 
   if (carregando || !comanda) {
-    return <div className="p-8 flex items-center justify-center min-h-full"><Loader2 size={24} className="text-amber-400 animate-spin" /></div>
+    return (
+      <div className="p-8 flex items-center justify-center min-h-full">
+        <Loader2 size={24} className="text-amber-400 animate-spin" />
+      </div>
+    )
   }
 
-  const podeAdicionar = !['Paga', 'Cancelada', 'Entregue'].includes(comanda.status)
-  const podeEntregar  = comanda.status === 'Pronto'
-  const podeCancelar  = !['Paga', 'Entregue', 'Pronto', 'EmPreparo'].includes(comanda.status)
+  const podeAdicionar = !['Paga', 'Cancelada', 'Fechada'].includes(comanda.status)
+  const podeCancelar  = ['Aberta', 'Pendente'].includes(comanda.status)
+  const acaoStatus    = STATUS_ACOES[comanda.status]
   const totalCarrinho = carrinho.reduce((s, i) => s + i.preco * i.qtd, 0)
 
   return (
@@ -237,7 +280,7 @@ function DetalheComanda({ comandaId, onVoltar }) {
         )}
       </div>
 
-      {/* Alerta de pronto */}
+      {/* Alerta pronto */}
       {comanda.status === 'Pronto' && (
         <div className="flex items-center gap-3 bg-green-500/10 border border-green-500/30 rounded-2xl px-4 py-3 mb-5">
           <CheckCircle2 size={16} className="text-green-400 shrink-0" />
@@ -245,11 +288,14 @@ function DetalheComanda({ comandaId, onVoltar }) {
         </div>
       )}
 
+      {/* Erro */}
       {erro && (
         <div className="flex items-center gap-3 bg-red-500/8 border border-red-500/20 rounded-2xl px-4 py-3 mb-5">
           <AlertTriangle size={15} className="text-red-400 shrink-0" />
           <p className="text-red-400 text-sm">{erro}</p>
-          <button onClick={() => setErro('')} className="ml-auto text-red-400/50 hover:text-red-400 cursor-pointer"><X size={14} /></button>
+          <button onClick={() => setErro('')} className="ml-auto text-red-400/50 hover:text-red-400 cursor-pointer">
+            <X size={14} />
+          </button>
         </div>
       )}
 
@@ -257,7 +303,9 @@ function DetalheComanda({ comandaId, onVoltar }) {
       <div className="bg-zinc-900 border-2 border-zinc-800 rounded-3xl mb-5 overflow-hidden">
         <div className="px-6 py-4 border-b border-zinc-800 flex items-center justify-between">
           <p className="text-white font-black text-sm">Itens do pedido</p>
-          <p className="text-zinc-600 text-xs">{comanda.itens?.length ?? 0} ite{(comanda.itens?.length ?? 0) !== 1 ? 'ns' : 'm'}</p>
+          <p className="text-zinc-600 text-xs">
+            {comanda.itens?.length ?? 0} ite{(comanda.itens?.length ?? 0) !== 1 ? 'ns' : 'm'}
+          </p>
         </div>
 
         {!comanda.itens?.length ? (
@@ -278,12 +326,24 @@ function DetalheComanda({ comandaId, onVoltar }) {
                     {item.observacao && <p className="text-zinc-600 text-xs mt-0.5">— {item.observacao}</p>}
                   </div>
                 </div>
-                <p className="text-white text-sm font-black">R$ {Number(item.precoTotal).toFixed(2).replace('.', ',')}</p>
+                <div className="flex items-center gap-3">
+                  <p className="text-white text-sm font-black">
+                    R$ {Number(item.precoTotal).toFixed(2).replace('.', ',')}
+                  </p>
+                  {podeAdicionar && (
+                    <button onClick={() => removerItem(item.id)} disabled={salvando}
+                      className="w-7 h-7 rounded-xl text-zinc-600 hover:text-red-400 hover:bg-red-500/10 flex items-center justify-center transition-all cursor-pointer disabled:opacity-50">
+                      <X size={13} />
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
             <div className="px-6 py-4 bg-zinc-800/40 flex items-center justify-between">
               <p className="text-zinc-400 font-black text-sm">Total da mesa</p>
-              <p className="text-amber-400 font-black text-2xl">R$ {Number(comanda.precoTotal).toFixed(2).replace('.', ',')}</p>
+              <p className="text-amber-400 font-black text-2xl">
+                R$ {Number(comanda.precoTotal).toFixed(2).replace('.', ',')}
+              </p>
             </div>
           </div>
         )}
@@ -291,10 +351,12 @@ function DetalheComanda({ comandaId, onVoltar }) {
 
       {/* Ações */}
       <div className="flex gap-3">
-        {podeEntregar && (
-          <button onClick={() => handleAcao(5)} disabled={salvando}
-            className="flex-1 bg-blue-500 hover:bg-blue-400 disabled:opacity-50 text-white font-black text-sm rounded-2xl py-3.5 transition-all cursor-pointer flex items-center justify-center gap-2 hover:shadow-[0_4px_20px_rgba(59,130,246,0.4)]">
-            {salvando ? <Loader2 size={15} className="animate-spin" /> : <><CheckCircle2 size={15} /> Confirmar Entrega</>}
+        {acaoStatus?.status && (
+          <button onClick={() => handleAcao(acaoStatus.status)} disabled={salvando}
+            className={`flex-1 border-2 font-black text-sm rounded-2xl py-3.5 transition-all cursor-pointer flex items-center justify-center gap-2 ${acaoStatus.cor}`}>
+            {salvando
+              ? <Loader2 size={15} className="animate-spin" />
+              : <><CheckCircle2 size={15} /> {acaoStatus.label}</>}
           </button>
         )}
         {podeCancelar && (
@@ -323,7 +385,9 @@ function DetalheComanda({ comandaId, onVoltar }) {
                 <div key={item.id} className="flex items-center justify-between px-3 py-3 rounded-2xl hover:bg-zinc-800 transition-colors">
                   <div className="flex-1 min-w-0 mr-3">
                     <p className="text-white text-sm font-bold truncate">{item.nome}</p>
-                    <p className="text-amber-400 text-xs font-black">R$ {Number(item.preco).toFixed(2).replace('.', ',')}</p>
+                    <p className="text-amber-400 text-xs font-black">
+                      R$ {Number(item.preco).toFixed(2).replace('.', ',')}
+                    </p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     {noCarrinho ? (
@@ -355,11 +419,18 @@ function DetalheComanda({ comandaId, onVoltar }) {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-zinc-400 text-sm">
                   <ShoppingCart size={14} />
-                  <span className="font-bold">{carrinho.reduce((s, i) => s + i.qtd, 0)} ite{carrinho.reduce((s, i) => s + i.qtd, 0) !== 1 ? 'ns' : 'm'}</span>
+                  <span className="font-bold">
+                    {carrinho.reduce((s, i) => s + i.qtd, 0)} ite{carrinho.reduce((s, i) => s + i.qtd, 0) !== 1 ? 'ns' : 'm'}
+                  </span>
                 </div>
                 <span className="text-amber-400 font-black">R$ {totalCarrinho.toFixed(2).replace('.', ',')}</span>
               </div>
-              {erro && <div className="flex items-center gap-2 bg-red-500/8 border border-red-500/20 rounded-2xl px-3 py-2"><AlertTriangle size={12} className="text-red-400 shrink-0" /><p className="text-red-400 text-xs">{erro}</p></div>}
+              {erro && (
+                <div className="flex items-center gap-2 bg-red-500/8 border border-red-500/20 rounded-2xl px-3 py-2">
+                  <AlertTriangle size={12} className="text-red-400 shrink-0" />
+                  <p className="text-red-400 text-xs">{erro}</p>
+                </div>
+              )}
               <button onClick={confirmarPedido} disabled={salvando}
                 className="w-full bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-zinc-950 font-black text-sm rounded-2xl py-3.5 transition-all cursor-pointer flex items-center justify-center gap-2 hover:shadow-[0_4px_20px_rgba(245,158,11,0.4)]">
                 {salvando ? <Loader2 size={14} className="animate-spin" /> : <><Plus size={14} /> Confirmar Pedido</>}
@@ -379,8 +450,11 @@ function DetalheComanda({ comandaId, onVoltar }) {
             <p className="text-white font-black text-lg mb-2">Cancelar Mesa {comanda.numeroDaMesa}?</p>
             <p className="text-zinc-500 text-sm mb-6">Esta ação não pode ser desfeita.</p>
             <div className="flex gap-3">
-              <button onClick={() => setConfirmacao(null)} className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm font-bold rounded-2xl py-3.5 transition-colors cursor-pointer">Manter</button>
-              <button onClick={() => handleAcao(7)} disabled={salvando}
+              <button onClick={() => setConfirmacao(null)}
+                className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm font-bold rounded-2xl py-3.5 transition-colors cursor-pointer">
+                Manter
+              </button>
+              <button onClick={() => handleAcao('Cancelada')} disabled={salvando}
                 className="flex-1 bg-red-500 hover:bg-red-400 disabled:opacity-50 text-white text-sm font-black rounded-2xl py-3.5 transition-all cursor-pointer flex items-center justify-center gap-2">
                 {salvando ? <Loader2 size={14} className="animate-spin" /> : 'Cancelar Comanda'}
               </button>
@@ -394,15 +468,18 @@ function DetalheComanda({ comandaId, onVoltar }) {
 
 /* ── Modal Nova Comanda ── */
 function ModalNovaComanda({ onCriar, onFechar }) {
-  const [mesa, setMesa]   = useState('')
-  const [obs, setObs]     = useState('')
-  const [erro, setErro]   = useState('')
+  const [mesa, setMesa]       = useState('')
+  const [obs, setObs]         = useState('')
+  const [erro, setErro]       = useState('')
   const [loading, setLoading] = useState(false)
   const [focado, setFocado]   = useState(null)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!mesa || Number(mesa) < 1 || Number(mesa) > 100) { setErro('Número de mesa inválido (1–100).'); return }
+    if (!mesa || Number(mesa) < 1 || Number(mesa) > 100) {
+      setErro('Número de mesa inválido (1–100).')
+      return
+    }
     try {
       setLoading(true); setErro('')
       await onCriar(Number(mesa), obs || null)
@@ -417,19 +494,26 @@ function ModalNovaComanda({ onCriar, onFechar }) {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="relative">
           <label className={`absolute left-4 pointer-events-none transition-all duration-200 z-10
-            ${focado === 'mesa' || mesa ? 'top-[9px] text-[10px] font-black tracking-[0.15em] uppercase text-amber-500' : 'top-1/2 -translate-y-1/2 text-sm text-zinc-500'}`}>
+            ${focado === 'mesa' || mesa
+              ? 'top-[9px] text-[10px] font-black tracking-[0.15em] uppercase text-amber-500'
+              : 'top-1/2 -translate-y-1/2 text-sm text-zinc-500'}`}>
             Número da Mesa
           </label>
           <input type="number" value={mesa} min="1" max="100" required
             onChange={e => { setMesa(e.target.value); setErro('') }}
             onFocus={() => setFocado('mesa')} onBlur={() => setFocado(null)}
             className={`w-full bg-zinc-800 border-2 rounded-2xl px-4 pt-7 pb-3 text-white text-sm outline-none transition-all
-              ${focado === 'mesa' ? 'border-amber-500 shadow-[0_0_0_3px_rgba(245,158,11,0.08)]' : 'border-zinc-700 hover:border-zinc-600'}`} />
+              ${focado === 'mesa'
+                ? 'border-amber-500 shadow-[0_0_0_3px_rgba(245,158,11,0.08)]'
+                : 'border-zinc-700 hover:border-zinc-600'}`} />
         </div>
 
         <div>
-          <label className="block text-[10px] font-black tracking-[0.15em] uppercase text-zinc-500 mb-2">Observação</label>
-          <textarea value={obs} onChange={e => setObs(e.target.value)} rows={2} placeholder="Informações especiais (opcional)"
+          <label className="block text-[10px] font-black tracking-[0.15em] uppercase text-zinc-500 mb-2">
+            Observação
+          </label>
+          <textarea value={obs} onChange={e => setObs(e.target.value)} rows={2}
+            placeholder="Informações especiais (opcional)"
             className="w-full bg-zinc-800 border-2 border-zinc-700 hover:border-zinc-600 focus:border-amber-500 rounded-2xl px-4 py-3 text-white text-sm placeholder-zinc-600 outline-none transition-all resize-none" />
         </div>
 
@@ -441,7 +525,10 @@ function ModalNovaComanda({ onCriar, onFechar }) {
         )}
 
         <div className="flex gap-3 pt-1">
-          <button type="button" onClick={onFechar} className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm font-bold rounded-2xl py-3.5 transition-colors cursor-pointer">Cancelar</button>
+          <button type="button" onClick={onFechar}
+            className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm font-bold rounded-2xl py-3.5 transition-colors cursor-pointer">
+            Cancelar
+          </button>
           <button type="submit" disabled={loading}
             className="flex-1 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-zinc-950 font-black text-sm rounded-2xl py-3.5 transition-all cursor-pointer flex items-center justify-center gap-2 hover:shadow-[0_4px_20px_rgba(245,158,11,0.4)]">
             {loading ? <Loader2 size={14} className="animate-spin" /> : <><Plus size={14} /> Abrir Comanda</>}
@@ -454,9 +541,9 @@ function ModalNovaComanda({ onCriar, onFechar }) {
 
 /* ── Página raiz ── */
 export default function Comanda() {
-  const [view, setView]           = useState('lista')
-  const [comandaId, setComandasId] = useState(null)
-  const [modalNova, setModalNova] = useState(false)
+  const [view, setView]             = useState('lista')
+  const [comandaId, setComandasId]  = useState(null)
+  const [modalNova, setModalNova]   = useState(false)
 
   const handleCriar = async (mesa, obs) => {
     const nova = await comandaService.abrir(mesa, obs)
@@ -466,12 +553,20 @@ export default function Comanda() {
   }
 
   if (view === 'detalhe' && comandaId) {
-    return <DetalheComanda comandaId={comandaId} onVoltar={() => { setView('lista'); setComandasId(null) }} />
+    return (
+      <DetalheComanda
+        comandaId={comandaId}
+        onVoltar={() => { setView('lista'); setComandasId(null) }}
+      />
+    )
   }
 
   return (
     <>
-      <ListaComandas onNova={() => setModalNova(true)} onAbrir={id => { setComandasId(id); setView('detalhe') }} />
+      <ListaComandas
+        onNova={() => setModalNova(true)}
+        onAbrir={id => { setComandasId(id); setView('detalhe') }}
+      />
       {modalNova && <ModalNovaComanda onCriar={handleCriar} onFechar={() => setModalNova(false)} />}
     </>
   )

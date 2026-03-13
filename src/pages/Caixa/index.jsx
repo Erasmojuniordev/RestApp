@@ -7,16 +7,16 @@ import {
 } from 'lucide-react'
 
 const METODOS_PAGAMENTO = [
-  { id: 'dinheiro',   label: 'Dinheiro',    icon: Banknote },
-  { id: 'credito',    label: 'Crédito',     icon: CreditCard },
-  { id: 'debito',     label: 'Débito',      icon: CreditCard },
-  { id: 'pix',        label: 'Pix',         icon: TrendingUp },
+  { id: 'dinheiro', label: 'Dinheiro', icon: Banknote },
+  { id: 'credito',  label: 'Crédito',  icon: CreditCard },
+  { id: 'debito',   label: 'Débito',   icon: CreditCard },
+  { id: 'pix',      label: 'Pix',      icon: TrendingUp },
 ]
 
 function Badge({ status }) {
   const map = {
-    Entregue: 'text-blue-400 bg-blue-500/10 border-blue-500/30',
-    Paga:     'text-green-400 bg-green-500/10 border-green-500/30',
+    Fechada: 'text-blue-400 bg-blue-500/10 border-blue-500/30',
+    Paga:    'text-green-400 bg-green-500/10 border-green-500/30',
   }
   return (
     <span className={`inline-flex items-center text-[11px] font-black tracking-wide border px-2.5 py-1 rounded-full ${map[status] ?? 'text-zinc-400 bg-zinc-800 border-zinc-700'}`}>
@@ -47,7 +47,7 @@ function Modal({ titulo, onClose, children }) {
   )
 }
 
-function CardComandaEntregue({ comanda, onRegistrarPagamento }) {
+function CardComandaFechada({ comanda, onRegistrarPagamento }) {
   return (
     <div className="group bg-zinc-900 border-2 border-blue-500/20 hover:border-blue-500/40 rounded-3xl overflow-hidden transition-all duration-300 hover:shadow-[0_12px_40px_rgba(59,130,246,0.08)] hover:-translate-y-0.5">
       <div className="h-1 bg-blue-500/40" />
@@ -67,7 +67,6 @@ function CardComandaEntregue({ comanda, onRegistrarPagamento }) {
           </div>
         </div>
 
-        {/* Preview dos itens */}
         <div className="bg-zinc-800/50 rounded-2xl border border-zinc-800 divide-y divide-zinc-800 mb-5 overflow-hidden">
           {comanda.itens?.slice(0, 3).map(item => (
             <div key={item.id} className="flex items-center justify-between px-4 py-2.5">
@@ -118,7 +117,7 @@ function CardComandaPaga({ comanda }) {
 }
 
 export default function Caixa() {
-  const [entregues, setEntregues]   = useState([])
+  const [fechadas, setFechadas]     = useState([])
   const [pagas, setPagas]           = useState([])
   const [carregando, setCarregando] = useState(true)
   const [conexao, setConexao]       = useState('conectando')
@@ -132,16 +131,15 @@ export default function Caixa() {
 
   const carregar = useCallback(async () => {
     try {
-      const [e, p] = await Promise.all([
-        comandaService.listar('Entregue'),
+      const [f, p] = await Promise.all([
+        comandaService.listar('Fechada'),  // ← era Entregue
         comandaService.listar('Paga'),
       ])
-      const detalhesE = await Promise.all(e.map(c => comandaService.obterPorId(c.id)))
-      const detalhesP = p.slice(0, 10) // últimas 10 pagas
-      const detalhesP2 = await Promise.all(detalhesP.map(c => comandaService.obterPorId(c.id)))
-      setEntregues(detalhesE)
-      setPagas(detalhesP2)
-      setPagasHoje(detalhesP2)
+      const detalheF  = await Promise.all(f.map(c => comandaService.obterPorId(c.id)))
+      const detalhesP = await Promise.all(p.slice(0, 10).map(c => comandaService.obterPorId(c.id)))
+      setFechadas(detalheF)
+      setPagas(detalhesP)
+      setPagasHoje(detalhesP)
     } catch (err) { console.error(err) }
     finally { setCarregando(false) }
   }, [])
@@ -155,7 +153,7 @@ export default function Caixa() {
       .withUrl(`${import.meta.env.VITE_API_URL}/hubs/cozinha?access_token=${token}`)
       .withAutomaticReconnect()
       .build()
-    hub.on('ComandaProntoParaPagar', carregar)
+    hub.on('ComandaFechada', carregar)      // ← era ComandaProntoParaPagar
     hub.on('StatusAtualizado', carregar)
     hub.onreconnecting(() => setConexao('reconectando'))
     hub.onreconnected(() => setConexao('conectado'))
@@ -176,7 +174,7 @@ export default function Caixa() {
     if (!metodoPag) { setErro('Selecione o método de pagamento.'); return }
     try {
       setSalvando(true); setErro('')
-      await comandaService.atualizarStatus(comandaSel.id, 6) // Paga
+      await comandaService.atualizarStatus(comandaSel.id, 'Paga')  // ← era 6
       setModal(null)
       setComandaSel(null)
       await carregar()
@@ -185,8 +183,8 @@ export default function Caixa() {
     } finally { setSalvando(false) }
   }
 
-  const totalHoje = pagasHoje.reduce((s, c) => s + Number(c.precoTotal ?? 0), 0)
-  const totalPendente = entregues.reduce((s, c) => s + Number(c.precoTotal ?? 0), 0)
+  const totalHoje     = pagasHoje.reduce((s, c) => s + Number(c.precoTotal ?? 0), 0)
+  const totalPendente = fechadas.reduce((s, c) => s + Number(c.precoTotal ?? 0), 0)
 
   return (
     <div className="p-8 min-h-full">
@@ -200,7 +198,7 @@ export default function Caixa() {
           <div>
             <h1 className="text-white font-black text-2xl">Caixa</h1>
             <p className="text-zinc-600 text-xs">
-              <span className="text-zinc-400 font-bold">{entregues.length}</span> aguardando pagamento
+              <span className="text-zinc-400 font-bold">{fechadas.length}</span> aguardando pagamento
             </p>
           </div>
         </div>
@@ -219,13 +217,13 @@ export default function Caixa() {
         </div>
       </div>
 
-      {/* Cards de resumo */}
+      {/* KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         {[
           {
             label:  'Aguardando Pagamento',
             valor:  `R$ ${totalPendente.toFixed(2).replace('.', ',')}`,
-            sub:    `${entregues.length} mesa${entregues.length !== 1 ? 's' : ''}`,
+            sub:    `${fechadas.length} mesa${fechadas.length !== 1 ? 's' : ''}`,
             cor:    'border-blue-500/20 bg-blue-500/5',
             corVal: 'text-blue-400',
             icon:   Clock,
@@ -266,14 +264,15 @@ export default function Caixa() {
         })}
       </div>
 
-      {/* Pendentes de pagamento */}
+      {/* Pendentes */}
       {carregando ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-3xl h-64 animate-pulse" style={{ animationDelay: `${i * 80}ms` }} />
+            <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-3xl h-64 animate-pulse"
+              style={{ animationDelay: `${i * 80}ms` }} />
           ))}
         </div>
-      ) : entregues.length === 0 ? (
+      ) : fechadas.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 mb-8 bg-zinc-900/50 border-2 border-dashed border-zinc-800 rounded-3xl text-center">
           <div className="w-14 h-14 rounded-3xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mb-4">
             <CheckCircle2 size={22} className="text-zinc-700" />
@@ -283,13 +282,13 @@ export default function Caixa() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-          {entregues.map(comanda => (
-            <CardComandaEntregue key={comanda.id} comanda={comanda} onRegistrarPagamento={abrirPagamento} />
+          {fechadas.map(comanda => (
+            <CardComandaFechada key={comanda.id} comanda={comanda} onRegistrarPagamento={abrirPagamento} />
           ))}
         </div>
       )}
 
-      {/* Histórico recente */}
+      {/* Histórico */}
       {pagas.length > 0 && (
         <>
           <div className="flex items-center gap-3 mb-4">
@@ -302,10 +301,9 @@ export default function Caixa() {
         </>
       )}
 
-      {/* Modal de pagamento */}
+      {/* Modal pagamento */}
       {modal === 'pagamento' && comandaSel && (
         <Modal titulo="Registrar Pagamento" onClose={() => setModal(null)}>
-          {/* Resumo */}
           <div className="bg-zinc-800/60 border border-zinc-800 rounded-2xl p-4 mb-5">
             <div className="flex items-center justify-between mb-3">
               <p className="text-zinc-400 text-sm font-bold">Mesa {comandaSel.numeroDaMesa}</p>
@@ -323,7 +321,6 @@ export default function Caixa() {
             </div>
           </div>
 
-          {/* Métodos */}
           <p className="text-[10px] font-black tracking-[0.2em] uppercase text-zinc-600 mb-3">Método de pagamento</p>
           <div className="grid grid-cols-2 gap-2 mb-5">
             {METODOS_PAGAMENTO.map(m => {
@@ -350,7 +347,8 @@ export default function Caixa() {
           )}
 
           <div className="flex gap-3">
-            <button onClick={() => setModal(null)} className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm font-bold rounded-2xl py-3.5 transition-colors cursor-pointer">
+            <button onClick={() => setModal(null)}
+              className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm font-bold rounded-2xl py-3.5 transition-colors cursor-pointer">
               Cancelar
             </button>
             <button onClick={confirmarPagamento} disabled={salvando || !metodoPag}

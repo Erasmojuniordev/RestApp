@@ -68,13 +68,20 @@ function FormUsuario({ onSalvar, onCancelar, carregando }) {
   }
 
   const validar = () => {
-    const e = {}
-    if (!form.nomeCompleto?.trim()) e.nomeCompleto = 'Nome obrigatório'
-    if (!form.email?.trim()) e.email = 'Email obrigatório'
-    if (!form.senha || form.senha.length < 8) e.senha = 'Mínimo 8 caracteres'
-    if (!form.role) e.role = 'Selecione um nível de acesso'
-    return e
-  }
+  const e = {}
+  if (!form.nomeCompleto?.trim()) e.nomeCompleto = 'Nome obrigatório'
+  if (!form.email?.trim()) e.email = 'Email obrigatório'
+  if (!form.senha || form.senha.length < 8)
+    e.senha = 'Mínimo 8 caracteres'
+  else if (!/[A-Z]/.test(form.senha))
+    e.senha = 'Precisa de ao menos uma letra maiúscula'
+  else if (!/[0-9]/.test(form.senha))
+    e.senha = 'Precisa de ao menos um número'
+  else if (!/[^A-Za-z0-9]/.test(form.senha))
+    e.senha = 'Precisa de ao menos um caractere especial'
+  if (!form.role) e.role = 'Selecione um nível de acesso'
+  return e
+}
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -88,6 +95,9 @@ function FormUsuario({ onSalvar, onCancelar, carregando }) {
       <FloatInput label="Nome completo" name="nomeCompleto" value={form.nomeCompleto} onChange={handleChange} error={erros.nomeCompleto} />
       <FloatInput label="Email" name="email" type="email" value={form.email} onChange={handleChange} error={erros.email} />
       <FloatInput label="Senha" name="senha" type="password" value={form.senha} onChange={handleChange} error={erros.senha} />
+        <p className="text-zinc-600 text-xs ml-1 -mt-2">
+          Mínimo 8 caracteres, letra maiúscula, número e caractere especial.
+        </p>
 
       <div>
         <label className="block text-[10px] font-black tracking-[0.15em] uppercase text-zinc-500 mb-3">
