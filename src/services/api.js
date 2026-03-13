@@ -17,13 +17,23 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const isLoginRoute = error.config?.url?.includes('/auth/login')
+
+    if (error.response?.status === 401 && !isLoginRoute) {
       localStorage.removeItem('token')
       localStorage.removeItem('usuario')
       window.location.href = '/login'
+      return Promise.reject(error)
     }
+
+    // Timeout ou API fora do ar
+    if (error.code === 'ECONNABORTED' || !error.response) {
+      return Promise.reject(
+        new Error('Não foi possível conectar ao servidor. Verifique sua conexão.')
+      )
+    }
+
     return Promise.reject(error)
   }
 )
-
 export default api

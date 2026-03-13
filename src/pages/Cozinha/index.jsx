@@ -122,17 +122,12 @@ export default function Cozinha() {
   const hubRef = useRef(null)
 
   const carregar = useCallback(async () => {
-    try {
-      const [p, e, r] = await Promise.all([
-        comandaService.listar('Pendente'),
-        comandaService.listar('EmPreparo'),
-        comandaService.listar('Pronto'),
-      ])
-      const todos = [...p, ...e, ...r]
-      const detalhes = await Promise.all(todos.map(c => comandaService.obterPorId(c.id)))
-      setComandas(detalhes)
-    } catch (err) { console.error(err) }
-    finally { setCarregando(false) }
+    const [p, e, r] = await Promise.all([
+      comandaService.listar('Pendente'),
+      comandaService.listar('EmPreparo'),
+      comandaService.listar('Pronto'),
+    ])
+    setComandas([...p, ...e, ...r])
   }, [])
 
   useEffect(() => { carregar() }, [carregar])
